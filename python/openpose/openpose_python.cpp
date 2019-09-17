@@ -263,6 +263,35 @@ public:
             return false;
         }
     }
+
+    bool tryEmplace(std::vector<std::shared_ptr<Datum>>& l)
+    {
+        try
+        {
+            auto datumsPtr = std::make_shared<std::vector<std::shared_ptr<Datum>>>(l);
+            return opWrapper->tryEmplace(datumsPtr);
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+            return false;
+        }
+    }
+
+    bool tryPop(std::vector<std::shared_ptr<Datum>>& l)
+    {
+        try
+        {
+            auto datumsPtr = std::make_shared<std::vector<std::shared_ptr<Datum>>>(l);
+            return opWrapper->tryPop(datumsPtr);
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+            return false;
+        }
+    }
+
 };
 
 std::vector<std::string> getImagesFromDirectory(const std::string& directoryPath)
@@ -297,6 +326,8 @@ PYBIND11_MODULE(pyopenpose, m) {
         .def("emplaceAndPop", &WrapperPython::emplaceAndPop)
         .def("waitAndEmplace", &WrapperPython::waitAndEmplace)
         .def("waitAndPop", &WrapperPython::waitAndPop)
+        .def("tryEmplace",  &WrapperPython::tryEmplace)
+        .def("tryPop",  &WrapperPython::tryPop)
         ;
 
     // Datum Object
