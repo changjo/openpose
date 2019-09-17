@@ -84,7 +84,26 @@ namespace op
     {
         try
         {
-            return spPoseExtractorNet->getPoseKeypoints();
+            // return spPoseExtractorNet->getPoseKeypoints();
+            Array<float> poseKeypoints = spPoseExtractorNet->getPoseKeypoints();
+
+            const auto numberPeople = poseKeypoints.getSize(0);
+            const auto numberPoseKeypoints = poseKeypoints.getSize(1);
+            const auto poseKeypointsDim = poseKeypoints.getSize(2);
+
+            int personIdxSelected = chooseCenterPerson(poseKeypoints);
+
+            // std::cout << personIdxSelected << std::endl;
+            for (int i = 0 ; i < numberPeople ; i++)
+                if (i != personIdxSelected)
+                    for (int j = 0 ; j < numberPoseKeypoints; j++)
+                        for (int k = 0; k < poseKeypointsDim; k++)
+                            poseKeypoints.at({i, j, k}) = 0.0;
+
+            // std::cout << poseKeypoints << std::endl;
+            return poseKeypoints;
+
+            // return spPoseExtractorNet->getPoseKeypoints();
         }
         catch (const std::exception& e)
         {
@@ -228,5 +247,56 @@ namespace op
         {
             error(e.what(), __LINE__, __FUNCTION__, __FILE__);
         }
+    }
+
+    int chooseCenterPerson(Array<float>& poseKeypoints, const float windowWidth, const float windowHeight)
+    {
+        const auto neckIdx = 1;
+        const auto numberPeople = poseKeypoints.getSize(0);
+        // Array<Array<float, 3>, numberPeople> neckKeypoints;
+        const auto numberPoseKeypoints = poseKeypoints.getSize(1);
+        const auto poseKeypointsDim = poseKeypoints.getSize(2);
+
+        // std::cout << poseKeypoints.getSize(0) << std::endl;
+        // std::cout << poseKeypoints.getSize(1) << std::endl;
+        // std::cout << poseKeypoints.getSize(2) << std::endl << std::endl;
+
+        std::vector<float> xCoordsNeck(numberPeople);
+        std::vector<float> yCoordsNeck(numberPeople);
+        std::vector<float> confsNeck(numberPeople);
+
+        for (int i = 0 ; i < numberPeople ; i++)
+        {
+            xCoordsNeck[i] = poseKeypoints.at({i, neckIdx, 0});
+            yCoordsNeck[i] = poseKeypoints.at({i, neckIdx, 1});
+            confsNeck[i] = poseKeypoints.at({i, neckIdx, 2});
+            // std::cout << xCoordsNeck[i] << " " << yCoordsNeck[i] << " " << confsNeck[i] << std::endl;
+        }
+
+        int nearestIdx = 0;
+        int xDiffMin = 100000;
+        int xDiff = 0;
+        for (int i = 0 ; i < numberPeople ; i++)
+        {
+            if (confsNeck[i] != 0)
+            {
+                xDiff = abs(xCoordsNeck[i] - windowWidth / 2);
+                if (xDiff < xDiffMin)
+                {
+                    xDiffMin = xDiff;
+                    nearestIdx = i;
+                }
+            }
+        }
+        
+        // for (int i = 0 ; i < numberPeople ; i++)
+        //     if (i != nearestIdx)
+        //         for (int j = 0 ; j < numberPeople; j++)
+        //             for (int k = 0; i < poseKeypointsDim; k++)
+        //                 poseKeypoints.at({i, j, k}) = 0.0
+
+        // std::cout << poseKeypoints.getConstCvMat() << std::endl << std::endl;
+
+        return nearestIdx;
     }
 }

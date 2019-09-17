@@ -11,6 +11,8 @@
 
 namespace op
 {
+    int chooseCenterPerson(Array<float>& poseKeypoints, const float windowWidth = 640.0, const float windowHeight = 480.0);
+
     class OP_API PoseExtractor
     {
     public:
