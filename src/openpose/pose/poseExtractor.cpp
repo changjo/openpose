@@ -252,6 +252,10 @@ namespace op
     int chooseCenterPerson(Array<float>& poseKeypoints, const float windowWidth, const float windowHeight)
     {
         const auto neckIdx = 1;
+        const auto rShoulderIdx = 2;
+        const auto lShoulderIdx = 5;
+        const auto detectingShoulderLengthRatio = 1.0 / 7.0;
+
         const auto numberPeople = poseKeypoints.getSize(0);
         // Array<Array<float, 3>, numberPeople> neckKeypoints;
         const auto numberPoseKeypoints = poseKeypoints.getSize(1);
@@ -264,24 +268,32 @@ namespace op
         std::vector<float> xCoordsNeck(numberPeople);
         std::vector<float> yCoordsNeck(numberPeople);
         std::vector<float> confsNeck(numberPeople);
+        std::vector<float> xCoordsRShoulder(numberPeople);
+        std::vector<float> xCoordsLShoulder(numberPeople);
 
         for (int i = 0 ; i < numberPeople ; i++)
         {
             xCoordsNeck[i] = poseKeypoints.at({i, neckIdx, 0});
             yCoordsNeck[i] = poseKeypoints.at({i, neckIdx, 1});
             confsNeck[i] = poseKeypoints.at({i, neckIdx, 2});
-            // std::cout << xCoordsNeck[i] << " " << yCoordsNeck[i] << " " << confsNeck[i] << std::endl;
+            xCoordsRShoulder[i] = poseKeypoints.at({i, rShoulderIdx, 0});
+            xCoordsLShoulder[i] = poseKeypoints.at({i, lShoulderIdx, 0});
+            // printf("%d: xCoordsNeck: %f, yCoordsNeck: %f, confsNeck: %f\n", i, xCoordsNeck[i], yCoordsNeck[i], confsNeck[i]);
+            // printf("%d: xCoordsRShoulder: %f, xCoordsLShoulder: %f\n", i, xCoordsRShoulder[i], xCoordsLShoulder[i]);
         }
 
-        int nearestIdx = 0;
+        int nearestIdx = -1;
         int xDiffMin = 100000;
         int xDiff = 0;
+        float shoulderLengthRatio = 0;
         for (int i = 0 ; i < numberPeople ; i++)
         {
-            if (confsNeck[i] != 0)
+            if (confsNeck[i] != 0.0)
             {
+                shoulderLengthRatio = abs(xCoordsLShoulder[i] - xCoordsRShoulder[i]) / windowWidth;
+                // printf("%d: shoulderLengthRatio: %f\n", i, shoulderLengthRatio);
                 xDiff = abs(xCoordsNeck[i] - windowWidth / 2);
-                if (xDiff < xDiffMin)
+                if (xDiff < xDiffMin && shoulderLengthRatio > detectingShoulderLengthRatio)
                 {
                     xDiffMin = xDiff;
                     nearestIdx = i;
